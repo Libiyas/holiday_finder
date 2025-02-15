@@ -3,7 +3,7 @@ import { Calendar, X, MapPin, Globe, Tag, Info } from "lucide-react";
 import { getHolidays, searchHolidays } from "./utils/api.ts";
 import SearchForm, { SearchParams } from "./components/SearchForm.tsx";
 import Footer from "./components/Footer.tsx";
-import Navbar from "./components/Navbar.tsx";
+import Navbar from "./components/NavBar.tsx";
 
 // Type definitions
 interface DateObject {
@@ -86,7 +86,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col">
+    <div className="min-h-screen w-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col">
       <Navbar />
 
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 flex-1 w-full">
