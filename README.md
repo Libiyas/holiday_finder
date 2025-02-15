@@ -72,6 +72,7 @@ A full-stack application that fetches holiday data from the Calendarific API and
 5. Run migrations:
 
    ```
+   cd ..
    python manage.py migrate
    ```
 
