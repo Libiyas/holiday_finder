@@ -1,0 +1,17 @@
+# .gitignore
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+env/
+venv/
+*.env
+*.log
+
+node_modules/
+dist/
+build/
+.cache/
+public/build/
+vite.config.js.local
+.eslintcache
