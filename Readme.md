@@ -65,6 +65,7 @@ A full-stack application that fetches holiday data from the Calendarific API and
 
    ```
    CALENDARIFIC_API_KEY=your_api_key_here
+   CALENDARIFIC_BASE_URL=https://calendarific.com/api/v2/holidays
    ```
 
 5. Run migrations:
