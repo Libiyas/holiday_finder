@@ -40,7 +40,7 @@ A full-stack application that fetches holiday data from the Calendarific API and
 1. Clone the repository:
 
    ```
-   git clone https://github.com/yourusername/holiday-management-app.git
+   git clone https://github.com/Libiyas/holiday_finder.git
    cd holiday-management-app
    ```
 
@@ -65,6 +65,7 @@ A full-stack application that fetches holiday data from the Calendarific API and
 
    ```
    CALENDARIFIC_API_KEY=your_api_key_here
+   CALENDARIFIC_BASE_URL=https://calendarific.com/api/v2/holidays
    ```
 
 5. Run migrations:

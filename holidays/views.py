@@ -48,7 +48,7 @@ class HolidayListView(APIView):
             return self.get_paginated_response(cached_data)
         
         # Prepare API call to Calendarific
-        api_url = 'https://calendarific.com/api/v2/holidays'
+        api_url = settings.CALENDARIFIC_BASE_URL
        
         params = {
             'api_key': settings.CALENDARIFIC_API_KEY,
@@ -120,7 +120,7 @@ class HolidaySearchView(APIView):
         
         if not holidays_data:
             # If not in cache, we need to fetch it first
-            api_url = 'https://calendarific.com/api/v2/holidays'
+            api_url = settings.CALENDARIFIC_BASE_URL
             params = {
                 'api_key': settings.CALENDARIFIC_API_KEY,
                 'country': country,
