@@ -41,7 +41,7 @@ A full-stack application that fetches holiday data from the Calendarific API and
 
    ```
    git clone https://github.com/Libiyas/holiday_finder.git
-   cd holiday-management-app
+   cd holiday_finder
    ```
 
 2. Create a virtual environment and activate it:
