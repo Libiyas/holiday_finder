@@ -4,23 +4,48 @@ from django.core.cache import cache
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
 from .serializers import HolidaySerializer
 
+class HolidayPageNumberPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
 class HolidayListView(APIView):
+    pagination_class = HolidayPageNumberPagination
+    
+    def get_paginated_response(self, data):
+        """
+        Return a paginated style `Response` object for the given output data.
+        """
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(data, self.request)
+        
+        if page is not None:
+            return paginator.get_paginated_response(page)
+        return Response(data)
+    
     def get(self, request):
         country = request.query_params.get('country', 'US')
         year = request.query_params.get('year', '2023')
         month = request.query_params.get('month', None)
+        day = request.query_params.get('day', None)
+        type = request.query_params.get('type', None)
         
         # Create cache key based on parameters
         cache_key = f'holidays_{country}_{year}'
         if month:
             cache_key += f'_{month}'
+        if day:
+            cache_key += f'_{day}'
+        if type:
+            cache_key += f'_{type}'
         
         # Check if data is in cache
         cached_data = cache.get(cache_key)
         if cached_data:
-            return Response(cached_data)
+            return self.get_paginated_response(cached_data)
         
         # Prepare API call to Calendarific
         api_url = 'https://calendarific.com/api/v2/holidays'
@@ -32,6 +57,10 @@ class HolidayListView(APIView):
         }
         if month:
             params['month'] = month
+        if day:
+            params['day'] = day
+        if type:
+            params['type'] = type
 
         try:
             response = requests.get(api_url, params=params)
@@ -46,7 +75,7 @@ class HolidayListView(APIView):
                 if serializer.is_valid():
                     # Store in cache
                     cache.set(cache_key, serializer.data, settings.CACHE_TTL)
-                    return Response(serializer.data)
+                    return self.get_paginated_response(serializer.data)
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
             return Response(
@@ -61,6 +90,19 @@ class HolidayListView(APIView):
             )
 
 class HolidaySearchView(APIView):
+    pagination_class = HolidayPageNumberPagination
+    
+    def get_paginated_response(self, data):
+        """
+        Return a paginated style `Response` object for the given output data.
+        """
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(data, self.request)
+        
+        if page is not None:
+            return paginator.get_paginated_response(page)
+        return Response(data)
+    
     def get(self, request):
         country = request.query_params.get('country', 'US')
         year = request.query_params.get('year', '2023')
@@ -118,4 +160,4 @@ class HolidaySearchView(APIView):
                (holiday['description'] and search_term in holiday['description'].lower())
         ]
         
-        return Response(filtered_holidays)
+        return self.get_paginated_response(filtered_holidays)

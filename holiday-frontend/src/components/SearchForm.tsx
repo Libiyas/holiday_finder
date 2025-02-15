@@ -1,11 +1,13 @@
 // Search Form Component
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { Search } from "lucide-react";
 
 export interface SearchParams {
   country: string;
   year: string;
   month: string;
+  day: string;
+  holidayType: string;
   searchQuery: string;
 }
 
@@ -45,6 +47,15 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch }) => {
     { value: "12", label: "December" },
   ];
 
+  // Generate days 1-31 plus "All Days" option
+  const DAYS: { value: string; label: string }[] = [
+    { value: "", label: "All Days" },
+    ...Array.from({ length: 31 }, (_, i) => ({
+      value: (i + 1).toString(),
+      label: (i + 1).toString(),
+    })),
+  ];
+
   const COUNTRIES: CountryOption[] = [
     { code: "US", name: "United States" },
     { code: "GB", name: "United Kingdom" },
@@ -58,15 +69,74 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch }) => {
     { code: "BR", name: "Brazil" },
   ];
 
+  const HOLIDAY_TYPES = [
+    "All Types",
+    "national",
+    "local",
+    "religious",
+    "observance",
+  ];
+
   const [country, setCountry] = useState<string>("US");
   const [year, setYear] = useState<string>(CURRENT_YEAR.toString());
   const [month, setMonth] = useState<string>("");
+  const [day, setDay] = useState<string>("");
+  const [holidayType, setHolidayType] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch({ country, year, month, searchQuery });
+    const params: SearchParams = {
+      country,
+      year,
+      month,
+      day,
+      holidayType: holidayType === "All Types" ? "" : holidayType,
+      searchQuery,
+    };
+    onSearch(params);
   };
+
+  // Function to get the maximum number of days for the selected month and year
+  const getMaxDaysInMonth = useCallback((): number => {
+    if (!month) return 31; // Default to 31 when "All Months" is selected
+
+    const monthNum = parseInt(month);
+    const yearNum = parseInt(year);
+
+    // For February, check if it's a leap year
+    if (monthNum === 2) {
+      if ((yearNum % 4 === 0 && yearNum % 100 !== 0) || yearNum % 400 === 0) {
+        return 29; // Leap year
+      } else {
+        return 28; // Non-leap year
+      }
+    }
+
+    // For months with 30 days
+    if ([4, 6, 9, 11].includes(monthNum)) {
+      return 30;
+    }
+
+    // All other months have 31 days
+    return 31;
+  }, [month, year]);
+
+  // Filter the days based on the selected month and year
+  const filteredDays = DAYS.filter((dayOption) => {
+    if (dayOption.value === "") return true; // Always keep "All Days" option
+
+    const dayNum = parseInt(dayOption.value);
+    return dayNum <= getMaxDaysInMonth();
+  });
+
+  // Reset day selection if it's invalid for the new month/year
+  React.useEffect(() => {
+    const maxDays = getMaxDaysInMonth();
+    if (day && parseInt(day) > maxDays) {
+      setDay("");
+    }
+  }, [day, getMaxDaysInMonth, month, year]);
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl p-6 mb-8">
@@ -80,7 +150,7 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch }) => {
       <form onSubmit={handleSubmit} className={`hidden sm:block`}>
         <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2 lg:grid-cols-6">
           {/* Country Select */}
-          <div className="sm:col-span-1 lg:col-span-2">
+          <div className="sm:col-span-1 lg:col-span-1">
             <label
               htmlFor="country"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
@@ -148,8 +218,54 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch }) => {
             </select>
           </div>
 
+          {/* Day Select - New Addition */}
+          <div className="sm:col-span-1 lg:col-span-1">
+            <label
+              htmlFor="day"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Day
+            </label>
+            <select
+              id="day"
+              name="day"
+              value={day}
+              onChange={(e) => setDay(e.target.value)}
+              className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-lg transition duration-150"
+            >
+              {filteredDays.map((d) => (
+                <option key={d.value} value={d.value}>
+                  {d.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Holiday type Select */}
+          <div className="sm:col-span-1 lg:col-span-1">
+            <label
+              htmlFor="type"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Type
+            </label>
+            <select
+              id="type"
+              name="type"
+              value={holidayType}
+              onChange={(e) => setHolidayType(e.target.value)}
+              className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-lg transition duration-150"
+            >
+              {HOLIDAY_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Search Input */}
-          <div className="sm:col-span-2 lg:col-span-2">
+          <div className="sm:col-span-2 lg:col-span-1">
             <label
               htmlFor="search"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
@@ -173,7 +289,7 @@ const SearchForm: React.FC<SearchFormProps> = ({ onSearch }) => {
           </div>
 
           {/* Submit Button */}
-          <div className="col-span-1 sm:col-span-2 lg:col-span-2 lg:col-start-5 flex items-end">
+          <div className="col-span-1 sm:col-span-2 lg:col-span-6 flex items-end">
             <button
               type="submit"
               className="w-full inline-flex justify-center items-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-150"
