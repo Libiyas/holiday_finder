@@ -1,7 +1,5 @@
 import axios from "axios";
 
-// Import the Holiday interface from where it's defined,
-// or define it here if it's not already defined elsewhere
 interface DateObject {
   year: number;
   month: number;
