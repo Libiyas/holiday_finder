@@ -4,6 +4,9 @@ import { getHolidays, searchHolidays } from "./utils/api.ts";
 import SearchForm, { SearchParams } from "./components/SearchForm.tsx";
 import Footer from "./components/Footer.tsx";
 import Navbar from "./components/NavBar.tsx";
+import Pagination, { pageSize } from "./components/Pagination.tsx";
+import { HolidayList } from "./components/HolidayList.tsx";
+import { formatDate } from "./utils/date.ts";
 
 // Type definitions
 interface DateObject {
@@ -12,18 +15,25 @@ interface DateObject {
   day: number;
 }
 
-interface HolidayDate {
+export interface HolidayDate {
   datetime: DateObject;
   iso: string;
 }
 
-interface Holiday {
+export interface Holiday {
   name: string;
   description?: string;
   date: HolidayDate;
   type: string[];
   locations?: string;
   states?: string;
+}
+
+interface PaginatedResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Holiday[];
 }
 
 // Main App Component
@@ -36,8 +46,23 @@ const App: React.FC = () => {
     country: "US",
     year: new Date().getFullYear().toString(),
     month: "",
+    day: "",
+    holidayType: "",
     searchQuery: "",
   });
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalItems, setTotalItems] = useState<number>(0);
+  const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
+  const [prevPageUrl, setPrevPageUrl] = useState<string | null>(null);
+
+  // Helper function to extract page number from URL
+  const getPageFromUrl = (url: string | null): number => {
+    if (!url) return 1;
+    const match = url.match(/page=(\d+)/);
+    return match ? parseInt(match[1]) : 1;
+  };
 
   useEffect(() => {
     const fetchHolidays = async () => {
@@ -45,21 +70,29 @@ const App: React.FC = () => {
       setError(null);
 
       try {
-        let data;
+        let data: PaginatedResponse;
         if (searchParams.searchQuery) {
           data = await searchHolidays(
             searchParams.country,
             searchParams.year,
-            searchParams.searchQuery
+            searchParams.searchQuery,
+            currentPage
           );
         } else {
           data = await getHolidays(
             searchParams.country,
             searchParams.year,
-            searchParams.month
+            searchParams.month,
+            searchParams.day,
+            searchParams.holidayType,
+            currentPage
           );
         }
-        setHolidays(data);
+
+        setHolidays(data.results);
+        setTotalItems(data.count);
+        setNextPageUrl(data.next);
+        setPrevPageUrl(data.previous);
       } catch (err) {
         setError("Failed to fetch holidays. Please try again later.");
         console.error(err);
@@ -69,21 +102,28 @@ const App: React.FC = () => {
     };
 
     fetchHolidays();
-  }, [searchParams]);
+  }, [searchParams, currentPage]);
 
   const handleSearch = (params: SearchParams) => {
+    // Reset to first page when search params change
+    setCurrentPage(1);
     setSearchParams(params);
   };
 
-  // Format the date from the API response
-  const formatDate = (dateObj: HolidayDate): string => {
-    const { year, month, day } = dateObj.datetime;
-    return new Date(year, month - 1, day).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+  const handleNextPage = () => {
+    if (nextPageUrl) {
+      setCurrentPage(getPageFromUrl(nextPageUrl));
+    }
   };
+
+  const handlePrevPage = () => {
+    if (prevPageUrl) {
+      setCurrentPage(getPageFromUrl(prevPageUrl));
+    }
+  };
+
+  // Calculate total pages
+  const totalPages = Math.ceil(totalItems / pageSize);
 
   return (
     <div className="min-h-screen w-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col">
@@ -133,48 +173,36 @@ const App: React.FC = () => {
           </div>
         ) : (
           <div>
-            <h2 className="text-xl font-semibold mb-4 flex items-center">
-              <Calendar className="mr-2 h-5 w-5 text-indigo-500" />
-              Holidays ({holidays.length})
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {holidays.map((holiday, index) => (
-                <div
-                  key={`${holiday.name}-${index}`}
-                  className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 cursor-pointer"
-                  onClick={() => setSelectedHoliday(holiday)}
-                >
-                  <div className="p-5">
-                    <div className="flex items-start justify-between">
-                      <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                        {holiday.name}
-                      </h3>
-                      <span className="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200 text-xs px-2 py-1 rounded-full">
-                        {formatDate(holiday.date).split(",")[0]}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                      {formatDate(holiday.date)}
-                    </p>
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      {holiday.type.map((type, idx) => (
-                        <span
-                          key={idx}
-                          className="px-2 py-1 text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 rounded-full"
-                        >
-                          {type}
-                        </span>
-                      ))}
-                    </div>
-                    {holiday.description && (
-                      <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">
-                        {holiday.description}
-                      </p>
-                    )}
-                  </div>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold flex items-center">
+                <Calendar className="mr-2 h-5 w-5 text-indigo-500" />
+                Holidays ({totalItems})
+              </h2>
+              {totalPages > 1 && (
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Page {currentPage} of {totalPages}
                 </div>
-              ))}
+              )}
             </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <HolidayList
+                holidays={holidays}
+                setSelectedHoliday={setSelectedHoliday}
+              />
+            </div>
+
+            {/* Pagination controls */}
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={currentPage}
+                totalItems={totalItems}
+                handlePrevPage={handlePrevPage}
+                handleNextPage={handleNextPage}
+                prevPageUrl={prevPageUrl}
+                nextPageUrl={nextPageUrl}
+              />
+            )}
 
             {selectedHoliday && (
               <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 z-50 flex items-center justify-center p-4">
