@@ -110,3 +110,4 @@ CORS_ALLOW_ALL_ORIGINS = True  # For development only
 
 # API Key for Calendarific
 CALENDARIFIC_API_KEY = os.getenv('CALENDARIFIC_API_KEY', '')
+CALENDARIFIC_BASE_URL = os.getenv('CALENDARIFIC_BASE_URL', '')
