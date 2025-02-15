@@ -59,7 +59,6 @@ A full-stack application that fetches holiday data from the Calendarific API and
    ```
    cd holidays_backend
    pip install -r requirements.txt
-   cd ..
    ```
 
 4. Create a `.env` file in the `holidays_backend` directory with your Calendarific API key:
