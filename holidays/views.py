@@ -27,8 +27,8 @@ class HolidayListView(APIView):
        
         params = {
             'api_key': settings.CALENDARIFIC_API_KEY,
-            'country': US,
-            'year': 2019
+            'country': country,
+            'year': year
         }
         if month:
             params['month'] = month
